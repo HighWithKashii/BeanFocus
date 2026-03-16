@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#E8704A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BeanFocus">
+  <title>BeanFocus 🫘</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,900;1,9..144,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:          #FDF6EE;
+      --surface:     #FFFFFF;
+      --surface2:    #F5EDE3;
+      --border:      #E8D9CC;
+      --primary:     #E8704A;
+      --primary-l:   rgba(232,112,74,0.12);
+      --green:       #5B9B47;
+      --green-l:     rgba(91,155,71,0.12);
+      --amber:       #D4851A;
+      --blue:        #4A7FC1;
+      --text:        #2C1810;
+      --muted:       #8C7060;
+      --muted2:      #B09080;
+      --tab-h:       64px;
+      --safe-b:      env(safe-area-inset-bottom, 0px);
+      --safe-t:      env(safe-area-inset-top,    0px);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #app {
+      display: flex; flex-direction: column;
+      height: 100%; max-width: 480px; margin: 0 auto;
+      position: relative;
+    }
+
+    /* ── VIEWS ── */
+    .view {
+      flex: 1; overflow-y: auto; overscroll-behavior: contain;
+      padding-top: var(--safe-t);
+      padding-bottom: calc(var(--tab-h) + var(--safe-b) + 24px);
+      display: none;
+    }
+    .view.active { display: block; }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      padding: 28px 20px 16px;
+      display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .page-title {
+      font-family: 'Fraunces', serif; font-size: 30px; font-weight: 900;
+      line-height: 1.1; color: var(--text);
+    }
+    .page-title span { color: var(--primary); }
+    .page-sub { font-size: 13px; color: var(--muted); margin-top: 4px; font-weight: 500; }
+
+    .points-badge {
+      background: var(--primary); color: white; border-radius: 20px;
+      padding: 6px 14px; font-size: 14px; font-weight: 700;
+      display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+      box-shadow: 0 3px 10px rgba(232,112,74,0.3);
+    }
+
+    /* ── LIMIT CARD ── */
+    .card {
+      margin: 0 20px 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 18px;
+    }
+    .card-label {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px;
+    }
+    .limit-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px;
+    }
+    .limit-nums {
+      font-family: 'Fraunces', serif; font-size: 15px; font-weight: 700;
+    }
+    .limit-nums .sep { color: var(--muted2); margin: 0 3px; }
+    .limit-nums .max { color: var(--muted); }
+
+    .prog-bg {
+      height: 14px; background: var(--surface2); border-radius: 7px;
+      overflow: hidden; margin-bottom: 12px;
+    }
+    .prog-fill {
+      height: 100%; border-radius: 7px;
+      background: var(--green);
+      transition: width .6s cubic-bezier(.34,1.56,.64,1), background .4s;
+    }
+    .prog-fill.warn { background: var(--amber); }
+    .prog-fill.over { background: var(--primary); }
+
+    .plat-row { display: flex; gap: 8px; }
+    .plat-chip {
+      flex: 1; background: var(--surface2); border-radius: 10px;
+      padding: 9px 10px; display: flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 600;
+    }
+    .plat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .plat-name { color: var(--muted); }
+    .plat-time { color: var(--text); font-family: 'Fraunces', serif; font-weight: 700; margin-left: auto; }
+
+    /* ── FOCUS TIMER ── */
+    .timer-num {
+      text-align: center; font-family: 'Fraunces', serif;
+      font-size: 58px; font-weight: 900; color: var(--text);
+      letter-spacing: -3px; line-height: 1; margin: 4px 0 16px;
+      transition: color .3s;
+    }
+    .timer-num.running { color: var(--primary); }
+
+    .dur-pills { display: flex; gap: 7px; justify-content: center; margin-bottom: 14px; }
+    .dur-pill {
+      background: var(--surface2); border: 2px solid var(--border);
+      border-radius: 20px; padding: 6px 13px; font-size: 13px;
+      font-weight: 700; cursor: pointer; color: var(--muted);
+      font-family: 'DM Sans', sans-serif; transition: all .15s;
+    }
+    .dur-pill.on { background: var(--primary-l); border-color: var(--primary); color: var(--primary); }
+
+    .timer-btns { display: flex; gap: 8px; }
+    .tbtn {
+      flex: 1; border: none; border-radius: 12px; padding: 14px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; transition: opacity .15s, transform .1s;
+    }
+    .tbtn:active { transform: scale(.97); opacity: .85; }
+    .tbtn.go   { background: var(--primary); color: white; box-shadow: 0 3px 12px rgba(232,112,74,.3); }
+    .tbtn.rst  { background: var(--surface2); color: var(--muted); }
+
+    /* ── FAB ── */
+    #fab {
+      position: fixed;
+      right: calc(50% - 240px + 20px);
+      bottom: calc(var(--tab-h) + var(--safe-b) + 16px);
+      border-radius: 18px; background: var(--primary); border: none;
+      cursor: pointer; display: flex; align-items: center; gap: 8px;
+      padding: 14px 20px; font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 700; color: white;
+      box-shadow: 0 4px 20px rgba(232,112,74,.38);
+      transition: transform .15s, box-shadow .15s; z-index: 50;
+    }
+    #fab:hover  { transform: scale(1.03); }
+    #fab:active { transform: scale(.96); }
+    @media (max-width:480px) { #fab { right: 20px; } }
+
+    /* ── TAB BAR ── */
+    .tab-bar {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px;
+      height: calc(var(--tab-h) + var(--safe-b));
+      background: var(--surface); border-top: 1px solid var(--border);
+      display: flex; z-index: 100; padding-bottom: var(--safe-b);
+    }
+    .tab-btn {
+      flex: 1; background: none; border: none; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 3px; color: var(--muted2);
+      transition: color .2s; position: relative;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .tab-btn.on { color: var(--primary); }
+    .tab-btn.on::before {
+      content: ''; position: absolute;
+      top: 0; left: 25%; right: 25%; height: 2.5px;
+      background: var(--primary); border-radius: 0 0 4px 4px;
+    }
+    .tab-icon  { font-size: 22px; line-height: 1; }
+    .tab-label { font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+
+    /* ── MODAL ── */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(44,24,16,.6);
+      z-index: 200; display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .25s;
+    }
+    .overlay.open { opacity: 1; pointer-events: all; }
+    .sheet {
+      width: 100%; max-width: 480px; background: var(--bg);
+      border-radius: 24px 24px 0 0;
+      padding: 20px 20px calc(24px + var(--safe-b));
+      transform: translateY(100%);
+      transition: transform .3s cubic-bezier(.32,.72,0,1);
+      max-height: 90vh; overflow-y: auto;
+    }
+    .overlay.open .sheet { transform: translateY(0); }
+    .drag-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+    .modal-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+    .modal-ttl { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 900; }
+    .modal-x {
+      background: var(--surface2); border: none; cursor: pointer;
+      width: 32px; height: 32px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 18px; transition: background .2s;
+    }
+    .modal-x:hover { background: var(--border); }
+
+    .fg { margin-bottom: 18px; }
+    .fl {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; display: block;
+    }
+    .finput {
+      width: 100%; background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 13px 15px; font-size: 16px;
+      color: var(--text); font-family: 'DM Sans', sans-serif;
+      outline: none; transition: border-color .2s, box-shadow .2s;
+      -webkit-appearance: none; appearance: none;
+    }
+    .finput:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-l); }
+
+    .plat-toggle { display: flex; gap: 8px; }
+    .ptbtn {
+      flex: 1; background: var(--surface2); border: 2px solid var(--border);
+      border-radius: 12px; padding: 12px; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700;
+      color: var(--muted); transition: all .15s; text-align: center;
+    }
+    .ptbtn.on { background: var(--primary-l); border-color: var(--primary); color: var(--primary); }
+
+    .qmin-row { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 10px; }
+    .qbtn {
+      background: var(--surface2); border: 2px solid var(--border);
+      border-radius: 10px; padding: 7px 13px; font-size: 13px;
+      font-weight: 700; cursor: pointer; color: var(--muted);
+      font-family: 'DM Sans', sans-serif; transition: all .15s;
+    }
+    .qbtn.on { background: var(--primary-l); border-color: var(--primary); color: var(--primary); }
+
+    .sbtn {
+      width: 100%; background: var(--primary); border: none;
+      border-radius: 14px; padding: 15px; font-size: 16px; font-weight: 700;
+      color: white; cursor: pointer; font-family: 'DM Sans', sans-serif;
+      transition: opacity .2s, transform .1s;
+      box-shadow: 0 4px 14px rgba(232,112,74,.3);
+    }
+    .sbtn:active { transform: scale(.98); }
+
+    /* ── STATS VIEW ── */
+    .stats-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; padding: 0 20px 16px;
+    }
+    .sbox {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px;
+    }
+    .sbox-lbl { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; }
+    .sbox-val { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 900; color: var(--text); }
+    .sbox-val.good { color: var(--green); }
+    .sbox-val.bad  { color: var(--primary); }
+
+    .chart-wrap { margin: 0 20px 16px; }
+    .chart-lbl { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+
+    .session-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .session-item:last-child { border-bottom: none; }
+    .si-left { display: flex; align-items: center; gap: 10px; }
+    .si-name { font-size: 14px; font-weight: 700; }
+    .si-date { font-size: 12px; color: var(--muted); }
+    .si-mins { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 700; color: var(--primary); }
+
+    /* ── HOUSE VIEW ── */
+    .house-wrap {
+      margin: 0 20px 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; overflow: hidden;
+    }
+    .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 20px 16px; }
+    .shop-item {
+      background: var(--surface); border: 2px solid var(--border);
+      border-radius: 16px; padding: 14px; text-align: center;
+      cursor: pointer; transition: all .15s;
+      user-select: none;
+    }
+    .shop-item:active { transform: scale(.97); }
+    .shop-item.can   { border-color: var(--primary); background: var(--primary-l); }
+    .shop-item.owned { border-color: var(--green);   background: var(--green-l);   cursor: default; }
+    .si-icon { font-size: 30px; margin-bottom: 5px; }
+    .si-nm   { font-size: 14px; font-weight: 700; }
+    .si-cost { font-size: 12px; font-weight: 600; color: var(--muted); margin-top: 2px; }
+    .shop-item.owned .si-cost { color: var(--green); }
+
+    /* ── SETTINGS ── */
+    .lim-display {
+      text-align: center; font-family: 'Fraunces', serif;
+      font-size: 36px; font-weight: 900; color: var(--primary); margin: 6px 0 10px;
+    }
+    .lim-display span { font-size: 16px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-weight: 500; }
+    input[type=range] { width: 100%; accent-color: var(--primary); cursor: pointer; }
+
+    /* ── EMPTY ── */
+    .empty { text-align: center; padding: 28px; color: var(--muted); }
+    .empty-icon { font-size: 38px; margin-bottom: 8px; }
+    .empty-txt  { font-size: 14px; font-weight: 600; color: var(--muted2); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; top: calc(var(--safe-t) + 16px);
+      left: 50%; transform: translateX(-50%) translateY(-90px);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 12px 20px;
+      font-size: 14px; font-weight: 600; color: var(--text);
+      z-index: 500; white-space: nowrap;
+      box-shadow: 0 8px 28px rgba(44,24,16,.13);
+      transition: transform .3s cubic-bezier(.32,.72,0,1);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── SCAN MODAL ── */
+    .upload-zone {
+      border: 2px dashed var(--border); border-radius: 16px;
+      padding: 28px 16px; text-align: center; cursor: pointer;
+      transition: border-color .2s, background .2s; background: var(--surface2);
+      position: relative;
+    }
+    .upload-zone:hover, .upload-zone.drag { border-color: var(--primary); background: var(--primary-l); }
+    .upload-zone input { position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%; }
+    .upload-icon { font-size: 36px; margin-bottom: 8px; }
+    .upload-lbl  { font-size: 14px; font-weight: 700; color: var(--muted); }
+    .upload-sub  { font-size: 12px; color: var(--muted2); margin-top: 3px; }
+
+    #scan-preview {
+      width: 100%; border-radius: 12px; margin: 12px 0 4px;
+      max-height: 180px; object-fit: cover; display: none;
+      border: 1px solid var(--border);
+    }
+
+    .scan-result {
+      background: var(--surface2); border-radius: 14px;
+      padding: 14px; margin-top: 12px;
+    }
+    .scan-result-lbl {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .07em; margin-bottom: 10px;
+    }
+    .scan-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 0; border-bottom: 1px solid var(--border);
+    }
+    .scan-row:last-child { border-bottom: none; }
+    .scan-row-left { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; }
+    .scan-edit {
+      width: 64px; text-align: center;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 8px; padding: 6px 8px; font-size: 15px;
+      font-family: 'Fraunces', serif; font-weight: 700; color: var(--text);
+      outline: none;
+    }
+    .scan-edit:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-l); }
+    .scan-unit { font-size: 12px; color: var(--muted); font-weight: 600; }
+
+    .scanning-spinner {
+      display: none; align-items: center; gap: 10px;
+      padding: 16px; justify-content: center; color: var(--muted);
+      font-size: 14px; font-weight: 600;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-ring {
+      width: 20px; height: 20px; border: 2.5px solid var(--border);
+      border-top-color: var(--primary); border-radius: 50%;
+      animation: spin .7s linear infinite; flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ╔═══════════════╗ -->
+  <!-- ║  TAB: HEUTE   ║ -->
+  <!-- ╚═══════════════╝ -->
+  <div id="view-heute" class="view active">
+    <div class="page-header">
+      <div>
+        <div class="page-title" id="greeting">Hey, <span>Beano</span>! 👋</div>
+        <div class="page-sub" id="heute-sub">Kein Tracking heute</div>
+      </div>
+      <div class="points-badge" id="pts-main">⭐ 0</div>
+    </div>
+
+    <!-- Daily progress -->
+    <div class="card">
+      <div class="limit-header">
+        <span class="card-label" style="margin:0">📱 Tageslimit</span>
+        <span class="limit-nums">
+          <span id="used-lbl">0 Min</span>
+          <span class="sep">/</span>
+          <span class="max" id="lim-lbl">60 Min</span>
+        </span>
+      </div>
+      <div class="prog-bg"><div class="prog-fill" id="prog" style="width:0%"></div></div>
+      <div class="plat-row">
+        <div class="plat-chip">
+          <div class="plat-dot" style="background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)"></div>
+          <span class="plat-name">Instagram</span>
+          <span class="plat-time" id="chip-ig">0m</span>
+        </div>
+        <div class="plat-chip">
+          <div class="plat-dot" style="background:#010101;border:1px solid #555"></div>
+          <span class="plat-name">TikTok</span>
+          <span class="plat-time" id="chip-tt">0m</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Focus Timer -->
+    <div class="card">
+      <div class="card-label">🎯 Fokus-Timer</div>
+      <div class="timer-num" id="timer-disp">25:00</div>
+      <div class="dur-pills">
+        <button class="dur-pill" data-m="5">5 Min</button>
+        <button class="dur-pill on" data-m="25">25 Min</button>
+        <button class="dur-pill" data-m="45">45 Min</button>
+        <button class="dur-pill" data-m="60">60 Min</button>
+      </div>
+      <div class="timer-btns">
+        <button class="tbtn go"  id="tbtn-go">▶ Starten</button>
+        <button class="tbtn rst" id="tbtn-rst">↺ Reset</button>
+      </div>
+    </div>
+
+    <!-- Settings + Scan buttons -->
+    <div style="padding:0 20px 4px;display:flex;justify-content:flex-end;gap:8px;">
+      <button id="btn-scan" style="background:var(--primary-l);border:1px solid var(--primary);border-radius:12px;padding:8px 14px;font-size:13px;font-weight:700;color:var(--primary);cursor:pointer;font-family:'DM Sans',sans-serif;">📸 Screenshot scannen</button>
+      <button id="btn-settings" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:8px 14px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;">⚙️ Einstellungen</button>
+    </div>
+  </div>
+
+  <!-- ╔════════════════╗ -->
+  <!-- ║  TAB: VERLAUF  ║ -->
+  <!-- ╚════════════════╝ -->
+  <div id="view-verlauf" class="view">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Verlauf <span>📊</span></div>
+        <div class="page-sub">Deine letzte Woche</div>
+      </div>
+    </div>
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="chart-wrap">
+      <div class="chart-lbl">Letzte 7 Tage — Minuten pro Tag</div>
+      <svg id="chart" viewBox="0 0 320 150" style="width:100%;display:block;"></svg>
+    </div>
+    <div class="card" style="margin-top:0;">
+      <div class="card-label">Letzte Einträge</div>
+      <div id="sess-list"></div>
+    </div>
+  </div>
+
+  <!-- ╔══════════════════╗ -->
+  <!-- ║  TAB: BOHNENHAUS ║ -->
+  <!-- ╚══════════════════╝ -->
+  <div id="view-haus" class="view">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Bohnenhaus <span>🏠</span></div>
+        <div class="page-sub" id="house-sub">Verdiene Punkte &amp; richte ein!</div>
+      </div>
+      <div class="points-badge" id="pts-haus">⭐ 0</div>
+    </div>
+    <div class="house-wrap">
+      <svg id="house-svg" viewBox="0 0 320 230" style="width:100%;display:block;"></svg>
+    </div>
+    <div style="padding:0 20px 10px;">
+      <div class="card-label">🛍️ Shop — Möbel kaufen</div>
+    </div>
+    <div class="shop-grid" id="shop-grid"></div>
+  </div>
+
+  <!-- FAB -->
+  <button id="fab">📱 Session loggen</button>
+
+  <!-- TAB BAR -->
+  <nav class="tab-bar">
+    <button class="tab-btn on" data-t="heute"><span class="tab-icon">🏠</span><span class="tab-label">Heute</span></button>
+    <button class="tab-btn"    data-t="verlauf"><span class="tab-icon">📊</span><span class="tab-label">Verlauf</span></button>
+    <button class="tab-btn"    data-t="haus"><span class="tab-icon">🫘</span><span class="tab-label">Bohnenhaus</span></button>
+  </nav>
+</div>
+
+<!-- ═══ MODAL: SESSION LOGGEN ═══ -->
+<div id="m-log" class="overlay">
+  <div class="sheet">
+    <div class="drag-handle"></div>
+    <div class="modal-hdr">
+      <h2 class="modal-ttl">Session loggen</h2>
+      <button class="modal-x" data-c="m-log">✕</button>
+    </div>
+    <div class="fg">
+      <label class="fl">Plattform</label>
+      <div class="plat-toggle">
+        <button class="ptbtn on" data-p="instagram">📸 Instagram</button>
+        <button class="ptbtn"    data-p="tiktok">🎵 TikTok</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl">Wie lange? (Minuten)</label>
+      <div class="qmin-row">
+        <button class="qbtn" data-q="5">5</button>
+        <button class="qbtn" data-q="10">10</button>
+        <button class="qbtn" data-q="15">15</button>
+        <button class="qbtn" data-q="20">20</button>
+        <button class="qbtn" data-q="30">30</button>
+        <button class="qbtn" data-q="45">45</button>
+        <button class="qbtn" data-q="60">60</button>
+      </div>
+      <input id="inp-min" class="finput" type="number" inputmode="numeric" min="1" max="480" placeholder="Oder selbst eingeben …">
+    </div>
+    <button class="sbtn" id="log-save">✓ Speichern (+1 Punkt)</button>
+  </div>
+</div>
+
+<!-- ═══ MODAL: EINSTELLUNGEN ═══ -->
+<div id="m-set" class="overlay">
+  <div class="sheet">
+    <div class="drag-handle"></div>
+    <div class="modal-hdr">
+      <h2 class="modal-ttl">Einstellungen</h2>
+      <button class="modal-x" data-c="m-set">✕</button>
+    </div>
+    <div class="fg">
+      <label class="fl">Bohnenname</label>
+      <input id="s-name" class="finput" type="text" placeholder="z.B. Beano">
+    </div>
+    <div class="fg">
+      <label class="fl">Tägliches Social-Media-Limit</label>
+      <div class="lim-display" id="lim-disp">60 <span>Min/Tag</span></div>
+      <input id="s-lim" type="range" min="10" max="180" step="5" value="60">
+    </div>
+    <button class="sbtn" id="set-save">Speichern</button>
+  </div>
+</div>
+
+<!-- ═══ MODAL: SCREENSHOT SCANNEN ═══ -->
+<div id="m-scan" class="overlay">
+  <div class="sheet">
+    <div class="drag-handle"></div>
+    <div class="modal-hdr">
+      <h2 class="modal-ttl">📸 Screenshot scannen</h2>
+      <button class="modal-x" data-c="m-scan">✕</button>
+    </div>
+
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">
+      Mach einen Screenshot deiner <strong>iOS Bildschirmzeit</strong> oder <strong>Android Digital Wellbeing</strong> und lade ihn hier hoch. Claude liest die Minuten automatisch aus.
+    </p>
+
+    <div class="fg">
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="scan-file" accept="image/*">
+        <div class="upload-icon">🖼️</div>
+        <div class="upload-lbl">Screenshot auswählen</div>
+        <div class="upload-sub">JPG, PNG — tap to open photos</div>
+      </div>
+      <img id="scan-preview" alt="Vorschau">
+    </div>
+
+    <div class="scanning-spinner" id="scanning-spinner">
+      <div class="spinner-ring"></div>
+      Claude analysiert den Screenshot …
+    </div>
+
+    <div class="scan-result" id="scan-result">
+      <div class="scan-result-lbl">📊 Erkannte Werte — bitte prüfen &amp; ggf. korrigieren</div>
+      <div id="scan-rows"></div>
+    </div>
+
+    <button class="sbtn" id="scan-import" style="display:none;margin-top:14px;">
+      ✓ Werte importieren
+    </button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
+
+<script>
+/* ════════════════════════════════
+   DATA
+════════════════════════════════ */
+const DB = {
+  K: 'beanfocus_v2',
+  def() {
+    return {
+      sessions: [],
+      settings: { limit: 60, name: 'Beano' },
+      points: 0,
+      unlocked: [],
+      checkedDate: null
+    };
+  },
+  get() {
+    try { return JSON.parse(localStorage.getItem(this.K)) || this.def(); }
+    catch { return this.def(); }
+  },
+  save(d) { localStorage.setItem(this.K, JSON.stringify(d)); }
+};
+
+/* ════════════════════════════════
+   SHOP CATALOGUE
+════════════════════════════════ */
+const SHOP = [
+  { id:'rug',    name:'Teppich',   icon:'🪆', cost:15 },
+  { id:'plant',  name:'Pflanze',   icon:'🌿', cost:20 },
+  { id:'lamp',   name:'Lampe',     icon:'🕯️', cost:25 },
+  { id:'window', name:'Fenster',   icon:'🪟', cost:30 },
+  { id:'shelf',  name:'Regal',     icon:'📚', cost:35 },
+  { id:'sofa',   name:'Sofa',      icon:'🛋️', cost:50 },
+  { id:'bed',    name:'Bett',      icon:'🛏️', cost:60 },
+  { id:'tv',     name:'Fernseher', icon:'📺', cost:80 },
+];
+
+/* ════════════════════════════════
+   UTILS
+════════════════════════════════ */
+const tod = () => new Date().toISOString().split('T')[0];
+const pad = n => n < 10 ? '0'+n : ''+n;
+const fmtM = m => m < 60 ? m+'m' : Math.floor(m/60)+'h'+(m%60?` ${m%60}m`:'');
+const fmtD = iso => { const [,m,d]=iso.split('-'); return `${d}.${m}.`; };
+const dBack = n => { const x=new Date(); x.setDate(x.getDate()-n); return x.toISOString().split('T')[0]; };
+
+let _tTimer;
+function toast(msg) {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(_tTimer);
+  _tTimer=setTimeout(()=>el.classList.remove('show'),2800);
+}
+
+/* ════════════════════════════════
+   DAILY REWARD
+════════════════════════════════ */
+function dailyReward() {
+  const d=DB.get(), t=tod();
+  if (d.checkedDate===t) return;
+  const yest=dBack(1);
+  const ySess=d.sessions.filter(s=>s.date===yest);
+  if (ySess.length>0) {
+    const tot=ySess.reduce((s,x)=>s+x.minutes,0);
+    if (tot<=d.settings.limit) {
+      const pts=tot<=d.settings.limit*.5?15:10;
+      d.points+=pts;
+      setTimeout(()=>toast(`🎉 Gestern unter Limit! +${pts} Punkte`),600);
+    }
+  }
+  d.checkedDate=t; DB.save(d);
+}
+
+/* ════════════════════════════════
+   RENDER: HEUTE
+════════════════════════════════ */
+function renderHeute() {
+  const d=DB.get(), t=tod();
+  const ts=d.sessions.filter(s=>s.date===t);
+  const tot=ts.reduce((s,x)=>s+x.minutes,0);
+  const ig=ts.filter(s=>s.platform==='instagram').reduce((s,x)=>s+x.minutes,0);
+  const tt=ts.filter(s=>s.platform==='tiktok').reduce((s,x)=>s+x.minutes,0);
+  const lim=d.settings.limit, pct=Math.min(100, Math.round(tot/lim*100));
+
+  document.querySelector('#greeting span').textContent=d.settings.name+'!';
+  document.getElementById('heute-sub').textContent=
+    tot===0?'Noch kein Tracking heute':`Heute ${fmtM(tot)} auf Social Media`;
+  document.getElementById('pts-main').textContent='⭐ '+d.points;
+  document.getElementById('used-lbl').textContent=fmtM(tot);
+  document.getElementById('lim-lbl').textContent=fmtM(lim);
+  document.getElementById('chip-ig').textContent=fmtM(ig);
+  document.getElementById('chip-tt').textContent=fmtM(tt);
+
+  const p=document.getElementById('prog');
+  p.style.width=pct+'%';
+  p.className='prog-fill'+(pct>=100?' over':pct>=75?' warn':'');
+}
+
+/* ════════════════════════════════
+   RENDER: VERLAUF
+════════════════════════════════ */
+function renderVerlauf() {
+  const d=DB.get();
+  const lim=d.settings.limit;
+  const last7=Array.from({length:7},(_,i)=>dBack(i));
+  const days=last7.map(dt=>({ date:dt, tot:d.sessions.filter(s=>s.date===dt).reduce((s,x)=>s+x.minutes,0) }));
+  const withData=days.filter(x=>x.tot>0);
+  const avg=withData.length?Math.round(withData.reduce((s,x)=>s+x.tot,0)/withData.length):0;
+  const best=withData.length?Math.min(...withData.map(x=>x.tot)):0;
+  const allTot=d.sessions.reduce((s,x)=>s+x.minutes,0);
+  const daysUnder=withData.filter(x=>x.tot<=lim).length;
+
+  document.getElementById('stats-grid').innerHTML=`
+    <div class="sbox"><div class="sbox-lbl">Ø täglich (7T)</div><div class="sbox-val ${avg<=lim?'good':'bad'}">${fmtM(avg)}</div></div>
+    <div class="sbox"><div class="sbox-lbl">Bester Tag</div><div class="sbox-val good">${best?fmtM(best):'—'}</div></div>
+    <div class="sbox"><div class="sbox-lbl">Gesamt</div><div class="sbox-val">${fmtM(allTot)}</div></div>
+    <div class="sbox"><div class="sbox-lbl">Tage unter Limit</div><div class="sbox-val good">${daysUnder}<span style="font-size:13px;color:var(--muted);font-family:'DM Sans',sans-serif;font-weight:500;">/7</span></div></div>
+  `;
+
+  // SVG chart
+  const W=320,H=150,PL=28,PR=12,PT=16,PB=22;
+  const IH=H-PT-PB, IW=W-PL-PR;
+  const rev=[...days].reverse();
+  const maxV=Math.max(...rev.map(x=>x.tot),lim,5);
+  const bW=28, gap=(IW-bW*7)/6;
+  const bars=rev.map((x,i)=>{
+    const bx=PL+i*(bW+gap);
+    const bh=Math.max(3,Math.round(x.tot/maxV*IH));
+    const by=PT+IH-bh;
+    const col=x.tot===0?'#E8D9CC':x.tot<=lim?'#5B9B47':'#E8704A';
+    return `
+      <rect x="${bx}" y="${by}" width="${bW}" height="${bh}" rx="5" fill="${col}"/>
+      <text x="${bx+bW/2}" y="${H-5}" text-anchor="middle" font-size="9" fill="#8C7060" font-family="DM Sans,sans-serif" font-weight="600">${fmtD(x.date)}</text>
+      ${x.tot>0?`<text x="${bx+bW/2}" y="${by-4}" text-anchor="middle" font-size="9" fill="${col}" font-family="DM Sans,sans-serif" font-weight="700">${x.tot}</text>`:''}
+    `;
+  }).join('');
+  const limY=PT+IH-Math.round(lim/maxV*IH);
+  document.getElementById('chart').innerHTML=bars+`
+    <line x1="${PL}" y1="${limY}" x2="${W-PR}" y2="${limY}" stroke="#E8704A" stroke-width="1.5" stroke-dasharray="4,3" opacity=".5"/>
+    <text x="${W-PR+2}" y="${limY+4}" font-size="9" fill="#E8704A" font-family="DM Sans,sans-serif" opacity=".8">Limit</text>
+  `;
+
+  // Session list
+  const recent=[...d.sessions].sort((a,b)=>b.created_at.localeCompare(a.created_at)).slice(0,12);
+  document.getElementById('sess-list').innerHTML=recent.length===0
+    ? `<div class="empty"><div class="empty-icon">📭</div><div class="empty-txt">Noch keine Sessions</div></div>`
+    : recent.map(s=>`
+      <div class="session-item">
+        <div class="si-left">
+          <span style="font-size:20px">${s.platform==='instagram'?'📸':'🎵'}</span>
+          <div>
+            <div class="si-name">${s.platform==='instagram'?'Instagram':'TikTok'}</div>
+            <div class="si-date">${fmtD(s.date)}</div>
+          </div>
+        </div>
+        <div class="si-mins">${s.minutes}m</div>
+      </div>`).join('');
+}
+
+/* ════════════════════════════════
+   RENDER: BOHNENHAUS
+════════════════════════════════ */
+function renderHaus() {
+  const d=DB.get(), u=id=>d.unlocked.includes(id);
+
+  document.getElementById('pts-haus').textContent='⭐ '+d.points;
+  document.getElementById('house-sub').textContent=
+    `${d.unlocked.length}/${SHOP.length} Möbel freigeschaltet`;
+
+  // Draw room
+  const beanX=u('sofa')?118:130, beanY=u('sofa')?96:118;
+  document.getElementById('house-svg').innerHTML=`
+    <!-- Room -->
+    <rect width="320" height="230" fill="#FFF8F0"/>
+    <rect y="170" width="320" height="60" fill="#E8C9A0"/>
+    <line x1="0" y1="170" x2="320" y2="170" stroke="#D4A870" stroke-width="2"/>
+    <rect y="163" width="320" height="8" fill="#E4BC80"/>
+
+    <!-- WINDOW -->
+    ${u('window')?`
+      <rect x="118" y="22" width="84" height="76" rx="5" fill="#AED6F1" stroke="#8BB4D0" stroke-width="2"/>
+      <line x1="160" y1="22" x2="160" y2="98" stroke="#8BB4D0" stroke-width="1.5"/>
+      <line x1="118" y1="60" x2="202" y2="60" stroke="#8BB4D0" stroke-width="1.5"/>
+      <path d="M108,20 Q120,55 113,98" fill="#E8A87C" opacity=".75"/>
+      <path d="M212,20 Q200,55 207,98" fill="#E8A87C" opacity=".75"/>
+    `:`<rect x="118" y="22" width="84" height="76" rx="5" fill="#EEE" stroke="#DDD" stroke-width="1" stroke-dasharray="5,3" opacity=".6"/>`}
+
+    <!-- RUG -->
+    ${u('rug')?`
+      <ellipse cx="160" cy="197" rx="95" ry="20" fill="#C0876A" opacity=".45"/>
+      <ellipse cx="160" cy="197" rx="78" ry="14" fill="#D4957A" opacity=".45"/>
+      <ellipse cx="160" cy="197" rx="56" ry="9" fill="#E8A88A" opacity=".38"/>
+    `:''}
+
+    <!-- SHELF -->
+    ${u('shelf')?`
+      <rect x="10" y="58" width="72" height="9" rx="3" fill="#C8A878"/>
+      <rect x="10" y="67" width="6" height="28" rx="2" fill="#B89060"/>
+      <rect x="76" y="67" width="6" height="28" rx="2" fill="#B89060"/>
+      <rect x="14" y="48" width="9" height="20" rx="2" fill="#E74C3C"/>
+      <rect x="25" y="52" width="8" height="16" rx="2" fill="#3498DB"/>
+      <rect x="35" y="46" width="10" height="22" rx="2" fill="#27AE60"/>
+      <rect x="47" y="50" width="8" height="18" rx="2" fill="#F39C12"/>
+      <rect x="57" y="48" width="9" height="20" rx="2" fill="#9B59B6"/>
+    `:''}
+
+    <!-- TV -->
+    ${u('tv')?`
+      <rect x="240" y="102" width="66" height="46" rx="5" fill="#2C3E50" stroke="#1A252F" stroke-width="1.5"/>
+      <rect x="244" y="106" width="58" height="36" rx="3" fill="#1ABC9C" opacity=".65"/>
+      <rect x="247" y="109" width="24" height="26" rx="2" fill="#16A085" opacity=".55"/>
+      <rect x="275" y="109" width="24" height="26" rx="2" fill="#16A085" opacity=".55"/>
+      <rect x="266" y="148" width="7" height="11" rx="2" fill="#2C3E50"/>
+      <rect x="258" y="157" width="24" height="4" rx="2" fill="#2C3E50"/>
+    `:''}
+
+    <!-- LAMP -->
+    ${u('lamp')?`
+      <rect x="270" y="94" width="6" height="76" rx="3" fill="#C8A878"/>
+      <ellipse cx="273" cy="173" rx="18" ry="6" fill="#B89060"/>
+      <path d="M256,94 Q273,64 290,94Z" fill="#F5E6CC" stroke="#E0C890" stroke-width="1.5"/>
+      <ellipse cx="273" cy="106" rx="22" ry="13" fill="#FFF5CC" opacity=".35"/>
+    `:''}
+
+    <!-- SOFA -->
+    ${u('sofa')?`
+      <rect x="58" y="136" width="152" height="34" rx="9" fill="#E8A87C"/>
+      <rect x="52" y="122" width="21" height="48" rx="7" fill="#D4845A"/>
+      <rect x="195" y="122" width="21" height="48" rx="7" fill="#D4845A"/>
+      <rect x="58" y="122" width="152" height="20" rx="7" fill="#D4845A"/>
+      <rect x="64" y="124" width="65" height="14" rx="5" fill="#EEC9A8"/>
+      <rect x="139" y="124" width="65" height="14" rx="5" fill="#EEC9A8"/>
+    `:`<rect x="68" y="153" width="124" height="14" rx="4" fill="#E8D9CC" stroke="#D4C8B8" stroke-width="1"/>`}
+
+    <!-- BED (only if sofa not unlocked) -->
+    ${u('bed')&&!u('sofa')?`
+      <rect x="8" y="132" width="92" height="38" rx="6" fill="#D4A878"/>
+      <rect x="12" y="136" width="37" height="22" rx="5" fill="#F5EDE3"/>
+      <rect x="53" y="136" width="37" height="22" rx="5" fill="#F5EDE3"/>
+      <rect x="8" y="152" width="92" height="18" rx="4" fill="#B8CDEB"/>
+      <rect x="8" y="124" width="11" height="46" rx="4" fill="#B89060"/>
+    `:''}
+
+    <!-- PLANT -->
+    ${u('plant')?`
+      <rect x="17" y="142" width="24" height="26" rx="3" fill="#C8A878"/>
+      <ellipse cx="29" cy="103" rx="18" ry="22" fill="#5B9B47" opacity=".9"/>
+      <ellipse cx="17" cy="114" rx="13" ry="16" fill="#4A8A3A" opacity=".8"/>
+      <ellipse cx="41" cy="112" rx="13" ry="16" fill="#4A8A3A" opacity=".8"/>
+      <ellipse cx="29" cy="90"  rx="11" ry="14" fill="#6AB357" opacity=".9"/>
+    `:''}
+
+    <!-- BEAN 🫘 -->
+    <g transform="translate(${beanX},${beanY})">
+      <ellipse cx="21" cy="54" rx="17" ry="6" fill="rgba(0,0,0,.08)"/>
+      <ellipse cx="21" cy="28" rx="21" ry="27" fill="#6DB54C"/>
+      <path d="M8,18 Q21,8 34,18" fill="none" stroke="#5A9A3C" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="14" cy="26" r="4.5" fill="white"/>
+      <circle cx="28" cy="26" r="4.5" fill="white"/>
+      <circle cx="15" cy="27" r="2.2" fill="#2C3E10"/>
+      <circle cx="29" cy="27" r="2.2" fill="#2C3E10"/>
+      <circle cx="15.8" cy="25.8" r=".9" fill="white"/>
+      <circle cx="29.8" cy="25.8" r=".9" fill="white"/>
+      <path d="M14,37 Q21,45 28,37" fill="none" stroke="#3A6A1A" stroke-width="2" stroke-linecap="round"/>
+    </g>
+  `;
+
+  // Shop
+  document.getElementById('shop-grid').innerHTML=SHOP.map(it=>{
+    const owned=d.unlocked.includes(it.id);
+    const can=!owned&&d.points>=it.cost;
+    return `
+    <div class="shop-item ${owned?'owned':can?'can':''}" data-shop="${it.id}">
+      <div class="si-icon">${it.icon}</div>
+      <div class="si-nm">${it.name}</div>
+      <div class="si-cost">${owned?'✓ Freigeschaltet':'⭐ '+it.cost+' Pts'}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ════════════════════════════════
+   RENDER ALL
+════════════════════════════════ */
+function ra() { renderHeute(); }
+
+/* ════════════════════════════════
+   TABS
+════════════════════════════════ */
+function goTab(t) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+t));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  document.getElementById('fab').style.display=t==='heute'?'flex':'none';
+  if(t==='verlauf') renderVerlauf();
+  if(t==='haus')    renderHaus();
+}
+document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>goTab(b.dataset.t)));
+
+/* ════════════════════════════════
+   MODALS
+════════════════════════════════ */
+const openM = id=>document.getElementById(id).classList.add('open');
+const closeM = id=>document.getElementById(id).classList.remove('open');
+document.querySelectorAll('.modal-x').forEach(b=>b.addEventListener('click',()=>closeM(b.dataset.c)));
+document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)closeM(el.id);}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(el=>closeM(el.id));});
+
+/* ════════════════════════════════
+   LOG SESSION
+════════════════════════════════ */
+let selPlat='instagram', selMins=null;
+
+document.getElementById('fab').addEventListener('click',()=>{
+  selPlat='instagram'; selMins=null;
+  document.getElementById('inp-min').value='';
+  document.querySelectorAll('.ptbtn').forEach(b=>b.classList.toggle('on',b.dataset.p==='instagram'));
+  document.querySelectorAll('.qbtn').forEach(b=>b.classList.remove('on'));
+  openM('m-log');
+});
+
+document.querySelectorAll('.ptbtn').forEach(b=>b.addEventListener('click',()=>{
+  selPlat=b.dataset.p;
+  document.querySelectorAll('.ptbtn').forEach(x=>x.classList.toggle('on',x.dataset.p===selPlat));
+}));
+
+document.querySelectorAll('.qbtn').forEach(b=>b.addEventListener('click',()=>{
+  selMins=+b.dataset.q;
+  document.getElementById('inp-min').value=selMins;
+  document.querySelectorAll('.qbtn').forEach(x=>x.classList.toggle('on',x.dataset.q===b.dataset.q));
+}));
+document.getElementById('inp-min').addEventListener('input',function(){
+  selMins=+this.value||null;
+  document.querySelectorAll('.qbtn').forEach(b=>b.classList.remove('on'));
+});
+
+document.getElementById('log-save').addEventListener('click',()=>{
+  const m=selMins||+document.getElementById('inp-min').value;
+  if(!m||m<=0){toast('❌ Bitte Minuten eingeben');return;}
+  const d=DB.get(), t=tod();
+  d.sessions.push({id:Date.now().toString(36),date:t,platform:selPlat,minutes:m,created_at:new Date().toISOString()});
+  d.points+=1;
+  const tot=d.sessions.filter(s=>s.date===t).reduce((s,x)=>s+x.minutes,0);
+  DB.save(d); renderHeute(); closeM('m-log');
+  toast(tot>d.settings.limit?`⚠️ Limit überschritten! (${fmtM(tot)} heute)`:`✓ Gespeichert! +1 Punkt — ${fmtM(tot)} heute`);
+});
+
+/* ════════════════════════════════
+   SETTINGS
+════════════════════════════════ */
+document.getElementById('btn-settings').addEventListener('click',()=>{
+  const d=DB.get();
+  document.getElementById('s-name').value=d.settings.name;
+  document.getElementById('s-lim').value=d.settings.limit;
+  document.getElementById('lim-disp').innerHTML=`${d.settings.limit} <span>Min/Tag</span>`;
+  openM('m-set');
+});
+document.getElementById('s-lim').addEventListener('input',function(){
+  document.getElementById('lim-disp').innerHTML=`${this.value} <span>Min/Tag</span>`;
+});
+document.getElementById('set-save').addEventListener('click',()=>{
+  const d=DB.get();
+  d.settings.name=document.getElementById('s-name').value||'Beano';
+  d.settings.limit=+document.getElementById('s-lim').value;
+  DB.save(d); renderHeute(); closeM('m-set');
+  toast('✓ Einstellungen gespeichert!');
+});
+
+/* ════════════════════════════════
+   FOCUS TIMER
+════════════════════════════════ */
+let tDur=25*60, tLeft=25*60, tIv=null, tRun=false, tSelMin=25;
+
+function updTimerDisp(){
+  document.getElementById('timer-disp').textContent=pad(Math.floor(tLeft/60))+':'+pad(tLeft%60);
+  document.getElementById('timer-disp').className='timer-num'+(tRun?' running':'');
+}
+
+document.querySelectorAll('.dur-pill').forEach(p=>p.addEventListener('click',()=>{
+  if(tRun)return;
+  tSelMin=+p.dataset.m; tDur=tSelMin*60; tLeft=tDur;
+  document.querySelectorAll('.dur-pill').forEach(x=>x.classList.toggle('on',x.dataset.m===p.dataset.m));
+  updTimerDisp();
+}));
+
+document.getElementById('tbtn-go').addEventListener('click',()=>{
+  if(tRun){
+    clearInterval(tIv); tRun=false;
+    document.getElementById('tbtn-go').textContent='▶ Fortsetzen';
+  } else {
+    tRun=true;
+    document.getElementById('tbtn-go').textContent='⏸ Pausieren';
+    tIv=setInterval(()=>{
+      tLeft--;
+      updTimerDisp();
+      if(tLeft<=0){
+        clearInterval(tIv); tRun=false;
+        document.getElementById('tbtn-go').textContent='▶ Starten';
+        const d=DB.get(); d.points+=3; DB.save(d);
+        renderHeute(); renderHaus();
+        toast(`🎯 Fokus fertig! +3 Punkte`);
+        tLeft=tDur; updTimerDisp();
+      }
+    },1000);
+  }
+  updTimerDisp();
+});
+
+document.getElementById('tbtn-rst').addEventListener('click',()=>{
+  clearInterval(tIv); tRun=false; tLeft=tDur;
+  document.getElementById('tbtn-go').textContent='▶ Starten';
+  updTimerDisp();
+});
+
+/* ════════════════════════════════
+   SHOP: BUY
+════════════════════════════════ */
+document.getElementById('shop-grid').addEventListener('click',e=>{
+  const el=e.target.closest('[data-shop]'); if(!el)return;
+  const item=SHOP.find(x=>x.id===el.dataset.shop); if(!item)return;
+  const d=DB.get();
+  if(d.unlocked.includes(item.id)){toast('✓ Bereits freigeschaltet!');return;}
+  if(d.points<item.cost){toast(`⭐ Noch ${item.cost-d.points} Punkte nötig`);return;}
+  d.points-=item.cost; d.unlocked.push(item.id);
+  DB.save(d); renderHaus(); renderHeute();
+  toast(`${item.icon} ${item.name} freigeschaltet!`);
+});
+
+/* ════════════════════════════════
+   SCREENSHOT SCAN
+════════════════════════════════ */
+document.getElementById('btn-scan').addEventListener('click', () => {
+  // reset state
+  document.getElementById('scan-file').value = '';
+  document.getElementById('scan-preview').style.display = 'none';
+  document.getElementById('scan-result').style.display = 'none';
+  document.getElementById('scan-import').style.display = 'none';
+  document.getElementById('scanning-spinner').style.display = 'none';
+  openM('m-scan');
+});
+
+let scanData = []; // [{platform, minutes}]
+
+document.getElementById('scan-file').addEventListener('change', async function() {
+  const file = this.files[0];
+  if (!file) return;
+
+  // Show preview
+  const reader = new FileReader();
+  reader.onload = e => {
+    const prev = document.getElementById('scan-preview');
+    prev.src = e.target.result;
+    prev.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+
+  // Show spinner, hide result
+  document.getElementById('scanning-spinner').style.display = 'flex';
+  document.getElementById('scan-result').style.display = 'none';
+  document.getElementById('scan-import').style.display = 'none';
+
+  // Convert to base64
+  const b64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload  = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+  const mediaType = file.type || 'image/jpeg';
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType, data: b64 }
+            },
+            {
+              type: 'text',
+              text: `This is a screenshot of iOS Screen Time or Android Digital Wellbeing.
+Find usage times ONLY for Instagram and TikTok.
+Respond ONLY with a JSON array, no explanation, no markdown, no backticks.
+Format: [{"platform":"instagram","minutes":30},{"platform":"tiktok","minutes":15}]
+If a platform is not visible, omit it. Convert hours to minutes (e.g. 1h 30m = 90).
+If neither platform is visible, return [].`
+            }
+          ]
+        }]
+      })
+    });
+
+    const data = await resp.json();
+    const raw = (data.content || []).find(b => b.type === 'text')?.text || '[]';
+
+    let parsed;
+    try { parsed = JSON.parse(raw.replace(/```json|```/g, '').trim()); }
+    catch { parsed = []; }
+
+    document.getElementById('scanning-spinner').style.display = 'none';
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      toast('⚠️ Keine Instagram/TikTok-Zeiten gefunden');
+      return;
+    }
+
+    // Ensure only valid platforms
+    scanData = parsed.filter(x => ['instagram','tiktok'].includes(x.platform) && x.minutes > 0);
+
+    if (scanData.length === 0) {
+      toast('⚠️ Keine Zeitdaten erkannt – bitte manuell eingeben');
+      return;
+    }
+
+    // Render editable result rows
+    document.getElementById('scan-rows').innerHTML = scanData.map((x, i) => `
+      <div class="scan-row">
+        <div class="scan-row-left">
+          <span style="font-size:20px">${x.platform === 'instagram' ? '📸' : '🎵'}</span>
+          ${x.platform === 'instagram' ? 'Instagram' : 'TikTok'}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input class="scan-edit" type="number" inputmode="numeric"
+                 id="scan-val-${i}" value="${x.minutes}" min="1" max="999">
+          <span class="scan-unit">Min</span>
+        </div>
+      </div>`).join('');
+
+    document.getElementById('scan-result').style.display = 'block';
+    document.getElementById('scan-import').style.display = 'block';
+
+  } catch (err) {
+    document.getElementById('scanning-spinner').style.display = 'none';
+    toast('❌ Fehler beim Scannen: ' + err.message);
+  }
+});
+
+document.getElementById('scan-import').addEventListener('click', () => {
+  const d = DB.get(), t = tod();
+  let added = 0;
+  scanData.forEach((x, i) => {
+    const mins = parseInt(document.getElementById('scan-val-' + i).value) || 0;
+    if (mins <= 0) return;
+    d.sessions.push({
+      id: Date.now().toString(36) + i,
+      date: t,
+      platform: x.platform,
+      minutes: mins,
+      created_at: new Date().toISOString(),
+      source: 'scan'
+    });
+    d.points += 2; // bonus for using scan
+    added++;
+  });
+  DB.save(d);
+  renderHeute();
+  closeM('m-scan');
+  toast(`✓ ${added} Einträge importiert! +${added * 2} Punkte`);
+});
+
+
+if('serviceWorker' in navigator){
+  const sw=`const C='beanfocus-v1';
+self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll(['/']))));
+self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));`;
+  navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'})),{type:'classic'}).catch(()=>{});
+}
+
+/* ════════════════════════════════
+   INIT
+════════════════════════════════ */
+dailyReward();
+renderHeute();
+updTimerDisp();
+goTab('heute');
+</script>
+</body>
+</html>
